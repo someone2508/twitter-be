@@ -59,6 +59,87 @@ const followUser = async (req, res) => {
     }
 }
 
+const unfollowUser = async (req, res) => {
+    try {
+        if(!req.userId)
+            return res.status(401).json({
+                message: "unauthorised access!"
+            });
+        
+        const user = await User.findOne({_id: req.userId, eStatus: "y"});
+
+        if(!user)
+            return res.status(401).json({
+                message: "active user with the given user info is not found!"
+            });
+        
+        if(!req.body.unFollowUserId)
+            return res.status(404).json({
+                message: "unFollowUserId is a required field!"
+            });
+
+        let userIdx = user.aFollowing.findIndex((user) => user.sUserId.toString() == req.body.unFollowUserId);
+
+        if(userIdx == -1)
+            return res.status(400).json({
+                message: "trying to unfollow a user which is not even followed!"
+            });
+        
+        const unfollowUser = await User.findOne({_id: req.body.unFollowUserId, eStatus: "y"});
+
+        if(!unfollowUser)
+            return res.status(404).json({
+                message: "an active user with the given userId to unfollow is not found!"
+            });
+        
+        user.aFollowing.splice(userIdx, 1);
+        
+        const response = await user.save();
+        console.log(response);
+
+        res.status(200).json({
+            message: "user unfollowed successfully!"
+        });
+
+    } catch(error) {
+        console.log(error);
+        res.status(501).json({
+            message: "something went wrong!"
+        });
+    }
+}
+
+const deleteMe = async (req, res) => {
+    try {
+        if(!req.userId)
+            return res.status(401).json({
+                message: "authorised access"
+            });
+
+        const user = await User.findOne({_id: req.userId, eStatus: "y"});
+
+        if(!user)
+            return res.status(401).json({
+                message: "active user details not found!"
+            });
+        
+        user.eStatus = "d";
+        await user.save();
+
+        res.status(200).json({
+            message: "user is deleted successfully!"
+        });
+
+    } catch(error) {
+        console.log(error);
+        res.status(501).json({
+            message: "something went wrong!"
+        });
+    }
+}
+
 module.exports = {
-    followUser
+    followUser,
+    unfollowUser,
+    deleteMe
 }

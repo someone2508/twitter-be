@@ -132,8 +132,110 @@ const getTweet = async (req, res) => {
     }
 }
 
+const likeTweet = async (req, res) => {
+    try {
+        if(!req.userId)
+            return res.status(401).json({
+                message: "unauthorised access!"
+            });
+            
+        const user = await User.findOne({_id: req.userId, eStatus: "y"});
+
+        if(!user)
+            return res.status(401).json({
+                message: "active userInfo for the user is not found!"
+            });
+
+        if(!req.body.tweetId)
+            return res.status(404).json({
+                message: "tweetId is a requiredId"
+            });
+        
+        const tweet = await Tweet.findOne({_id: req.body.tweetId, eStatus: "y"});
+
+        if(!tweet)
+            return res.status(404).json({
+                message: "tweet witht the given tweetId is not found!"
+            });
+        
+        const isAlreadyLiked = tweet.aTweetLikes.find(eUser => eUser.sUserId.toString() == user._id);
+
+        if(isAlreadyLiked)
+            return res.status(400).json({
+                message: "user has already liked the tweet!"
+            });
+        
+        tweet.aTweetLikes.push({
+            sUserId: user._id
+        });
+
+        await tweet.save();
+
+        res.status(200).json({
+            message: "user has successfully liked the tweet!"
+        });
+
+    } catch(error) {
+        console.log(error);
+        res.status(501).json({
+            message: "something went wrong!"
+        });
+    }
+}
+
+const unlikeTweet = async (req, res) => {
+    try {
+        if(!req.userId)
+            return res.status(401).json({
+                message: "unauthorised access"
+            });
+        
+        const user = await User.findOne({_id: req.userId, eStatus: "y"});
+
+        if(!user)
+            return res.status(404).json({
+                message: "active user info with the given login details not found!"
+            });
+        
+        if(!req.body.tweetId)
+            return res.status(404).json({
+                message: "tweetId is a required field!"
+            });
+        
+        const tweet = await Tweet.findOne({_id: req.body.tweetId, eStatus: "y"});
+
+        if(!tweet)
+            return res.status(404).json({
+                message: "tweet with the given tweetId is not found!"
+            });
+        
+        const userIdx = tweet.aTweetLikes.findIndex((eUser) => eUser.sUserId.toString() == user._id);
+
+        if(userIdx == -1)
+            return res.status(400).json({
+                message: "user has not yet liked the tweet!"
+            });
+        
+        tweet.aTweetLikes.splice(userIdx, 1);
+
+        await tweet.save();
+
+        res.status(200).json({
+            message: "user has unliked the tweet"
+        });
+
+    } catch(error) {
+        console.log(error);
+        res.status(501).json({
+            message: "something went wrong!"
+        })
+    }
+}
+
 module.exports = {
     createTweet,
     deleteTweet,
-    getTweet
+    getTweet,
+    likeTweet,
+    unlikeTweet
 }
